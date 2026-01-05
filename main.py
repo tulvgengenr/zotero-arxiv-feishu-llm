@@ -29,6 +29,7 @@ def load_config(path: str = "config.yaml") -> Dict:
     env_overrides = {
         ("zotero", "library_id"): ["ZOTERO_ID"],
         ("zotero", "api_key"): ["ZOTERO_KEY"],
+        ("zotero", "library_type"): ["ZOTERO_LIBRARY_TYPE"],
         ("feishu", "webhook_url"): ["FEISHU_WEBHOOK", "LARK_WEBHOOK"],
         ("llm", "api_key"): ["LLM_API_KEY", "OPENAI_API_KEY"],
         ("llm", "model"): ["LLM_MODEL", "OPENAI_MODEL"],
