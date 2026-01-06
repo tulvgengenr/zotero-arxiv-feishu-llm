@@ -5,6 +5,7 @@ feishu:
 
 arxiv:
   query: "cs.AI+cs.RO+cs.LG+cs.CL+cs.CV"
+  source: "api"                  # "rss" (may delay a few hours) or "api" (official arXiv API, usually fresher)
   max_results: 250                # max number of arXiv papers to fetch
   only_new: true                  # true: only fetch papers from the last days (days_back)
   days_back: 1                    # number of days to fetch arXiv papers from

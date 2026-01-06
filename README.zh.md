@@ -65,8 +65,11 @@
 
 ## GitHub Actions
 工作流 `.github/workflows/run.yml`：
-- `run` Job：每天 10:00 CST 定时运行，可在 Actions 页面手动触发。
-- `test` Job：仅手动触发时运行，使用 `FEISHU_TEST_WEBHOOK`，便于演练不打扰正式群。
+- `run` Job：两条定时覆盖夏/冬令时，无需手动改：  
+  - `0 0 * * 1-5`（UTC 周一-周五 00:00，对应美东周日-周四 20:00 夏令时）  
+  - `0 1 * * 1-5`（UTC 周一-周五 01:00，对应美东周日-周四 20:00 冬令时）  
+  GH 调度有延迟也有缓冲，随时可在 Actions 手动触发。
+- `test` Job：仅手动触发，使用 `FEISHU_TEST_WEBHOOK`，便于演练不打扰正式群。
 
 - 在仓库 Settings → Secrets 添加上述环境变量后，即可点击 “Run workflow” 触发；工作流会自动复制 `config.example.yaml` 为 `config.yaml` 并执行 `python main.py`。
 - 想无本地部署、直接在 GitHub 上用：Fork 仓库 → 在自己 Fork 的 Settings → Secrets 配好变量（同上）→ 打开 Actions 选项卡，手动触发 `run` 或 `test` 工作流即可，无需本地 clone；后续可在 Fork 里改 `config.example.yaml` / `arxiv.query` 等参数，再次运行。
@@ -74,7 +77,7 @@
 ## 配置项速览（`config.yaml`）
 - `feishu.webhook_url`：飞书机器人 Webhook。
 - `feishu.title` / `feishu.header_template`：卡片标题与头部色（blue / wathet / turquoise / green / yellow / orange / red / carmine；填 `#DAE3FA` 会自动映射为 wathet）。
-- `arxiv.query` / `arxiv.max_results` / `arxiv.days_back`：arXiv RSS 查询与时间窗口。
+- `arxiv.source`（`rss` 或 `api`）、`arxiv.query` / `arxiv.max_results` / `arxiv.days_back`：arXiv 拉取方式与时间窗口。
 - `zotero.library_id` / `zotero.api_key` / `zotero.library_type` / `zotero.item_types` / `zotero.max_items`：Zotero 访问与过滤。
 - `embedding.model`：相似度嵌入模型（默认 `avsolatorio/GIST-small-Embedding-v0`）。
 - `llm.model` / `llm.base_url` / `llm.api_key`：OpenAI 兼容模型与接口。

@@ -25,6 +25,7 @@ def run(send: bool, limit: int = None):
         max_results=int(cfg["arxiv"].get("max_results", 30)),
         only_new=bool(cfg["arxiv"].get("only_new", True)),
         days_back=int(cfg["arxiv"].get("days_back", 1)),
+        source=str(cfg["arxiv"].get("source", "rss")).lower(),
     )
 
     print("Loading Zotero papers...")

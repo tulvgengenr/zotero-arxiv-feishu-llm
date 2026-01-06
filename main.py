@@ -56,6 +56,8 @@ def load_config(path: str = "config.yaml") -> Dict:
     cfg["arxiv"].setdefault("query", "cs.AI+cs.CL+cs.LG")
     cfg["arxiv"].setdefault("max_results", 30)
     cfg["arxiv"].setdefault("days_back", 1)
+    cfg["arxiv"].setdefault("only_new", True)
+    cfg["arxiv"].setdefault("source", "rss")  # "rss" (default) or "api"
     cfg["embedding"].setdefault("model", "avsolatorio/GIST-small-Embedding-v0")
     cfg["llm"].setdefault("temperature", 0.0)
     cfg["llm"].setdefault("base_url", "https://api.openai.com/v1")
@@ -119,6 +121,7 @@ def main():
         max_results=int(config["arxiv"].get("max_results", 30)),
         only_new=bool(config["arxiv"].get("only_new", True)),
         days_back=int(config["arxiv"].get("days_back", 1)),
+        source=str(config["arxiv"].get("source", "rss")).lower(),
     )
     print(f"Fetched {len(arxiv_papers)} arXiv candidates.")
     if not arxiv_papers:

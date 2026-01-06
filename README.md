@@ -57,6 +57,7 @@ Required:
 - `FEISHU_WEBHOOK` (or `LARK_WEBHOOK`; use `FEISHU_TEST_WEBHOOK` for dry-runs)
 - `ZOTERO_ID`
 - `ZOTERO_KEY`
+- `ZOTERO_LIBRARY_TYPE` (`user` or `group`)
 - `LLM_API_KEY`
 - `LLM_MODEL`
 - `LLM_BASE_URL` (use default for official OpenAI)
@@ -65,7 +66,7 @@ Optional: `OPENAI_API_KEY` / `OPENAI_MODEL` / `OPENAI_BASE_URL` (aliases of `LLM
 
 ## Config Highlights (`config.yaml`)
 - `feishu.webhook_url`, `feishu.title`, `feishu.header_template` (blue/wathet/turquoise/green/yellow/orange/red/carmine; `#DAE3FA` maps to wathet).
-- `arxiv.query`, `arxiv.max_results`, `arxiv.days_back` for RSS filtering/window.
+- `arxiv.source` (`rss` or `api`), `arxiv.query`, `arxiv.max_results`, `arxiv.days_back` for arXiv fetching/window.
 - `zotero.library_id`, `zotero.api_key`, `zotero.library_type`, `zotero.item_types`, `zotero.max_items` for access/filters.
 - `embedding.model` (default `avsolatorio/GIST-small-Embedding-v0`).
 - `llm.model`, `llm.base_url`, `llm.api_key` for OpenAI-compatible calls.
@@ -80,7 +81,10 @@ Optional: `OPENAI_API_KEY` / `OPENAI_MODEL` / `OPENAI_BASE_URL` (aliases of `LLM
 
 ## GitHub Actions
 - Workflow `.github/workflows/run.yml`:  
-  - `run` job: daily at 10:00 CST, also manual.  
+  - `run` job: two cron triggers to cover DST without changes:  
+    - `0 0 * * 1-5` (UTC Mon–Fri 00:00) → Sun–Thu 20:00 EDT  
+    - `0 1 * * 1-5` (UTC Mon–Fri 01:00) → Sun–Thu 20:00 EST  
+    Both leave slack for GH scheduling; manual dispatch always available.  
   - `test` job: manual only, uses `FEISHU_TEST_WEBHOOK` for safe drills.
 - In your repo (or fork) Settings → Secrets, add the env vars above; the workflow copies `config.example.yaml` to `config.yaml` and runs `python main.py`.
 - Want zero local setup? Fork this repo → add Secrets in your fork → open Actions and manually trigger `run` or `test`. Tweak `config.example.yaml` / `arxiv.query` in your fork and rerun.
