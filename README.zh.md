@@ -65,9 +65,11 @@
 
 ## GitHub Actions
 工作流 `.github/workflows/run.yml`：
-- `run` Job：两条定时覆盖夏/冬令时，无需手动改：  
-  - `0 0 * * 1-5`（UTC 周一-周五 00:00，对应美东周日-周四 20:00 夏令时）  
-  - `0 1 * * 1-5`（UTC 周一-周五 01:00，对应美东周日-周四 20:00 冬令时）  
+- `run` Job：两条定时覆盖夏/冬令时。为避免 GH 排队导致过早执行，可提前排队并睡眠到目标时间。
+- 默认配置：
+  - cron `30 23 * * 0-4` + `QUEUE_EARLY_MINUTES=60` → 目标 UTC 00:30（夏令时）
+  - cron `30 0 * * 1-5` + `QUEUE_EARLY_MINUTES=60` → 目标 UTC 01:30（冬令时）
+- 如需调整提前窗口，请同步修改 cron 和 `QUEUE_EARLY_MINUTES`。
   GH 调度有延迟也有缓冲，随时可在 Actions 手动触发。
 - `test` Job：仅手动触发，使用 `FEISHU_TEST_WEBHOOK`，便于演练不打扰正式群。
 

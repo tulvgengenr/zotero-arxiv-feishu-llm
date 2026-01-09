@@ -2,9 +2,8 @@ name: Run Zotero Feishu LLM
 
 on:
   schedule:
-    # - cron: "0 0 * * 1-5"   # UTC 00:00 Mon–Fri (Sun–Thu 20:00 EDT)
-    # - cron: "0 1 * * 1-5"   # UTC 01:00 Mon–Fri (Sun–Thu 20:00 EST)
-    - cron: "0 0 * * 1-5"     # GH JOB MAY DELAY UP TO 2 HOURS
+    # Queue early, then sleep until target time. Adjust QUEUE_EARLY_MINUTES below.
+    - cron: "30 0 * * 1-5"    # UTC 00:30 Mon–Fri → target 01:30 (EST)
   workflow_dispatch: {}
 
 jobs:
@@ -19,6 +18,7 @@ jobs:
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       LLM_MODEL: ${{ secrets.LLM_MODEL }}
       LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+      QUEUE_EARLY_MINUTES: "60"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,6 +36,41 @@ jobs:
 
       - name: Prepare config
         run: cp config.example.yaml config.yaml
+
+      - name: Wait until target time (UTC)
+        env:
+          SCHEDULE_CRON: ${{ github.event.schedule }}
+          RUN_STARTED_AT: ${{ github.run_started_at }}
+        run: |
+          if [ -z "$SCHEDULE_CRON" ]; then
+            echo "No schedule cron (manual run); skip wait."
+            exit 0
+          fi
+
+          cron_min=$(echo "$SCHEDULE_CRON" | awk '{print $1}')
+          cron_hour=$(echo "$SCHEDULE_CRON" | awk '{print $2}')
+          if ! [[ "$cron_min" =~ ^[0-9]+$ && "$cron_hour" =~ ^[0-9]+$ ]]; then
+            echo "Unsupported cron format: $SCHEDULE_CRON"
+            exit 1
+          fi
+
+          run_started_epoch=$(date -u -d "$RUN_STARTED_AT" +%s)
+          run_started_date=$(date -u -d "@$run_started_epoch" +%Y-%m-%d)
+          scheduled_epoch=$(date -u -d "$run_started_date $cron_hour:$cron_min:00" +%s)
+          if [ "$scheduled_epoch" -gt "$run_started_epoch" ]; then
+            scheduled_epoch=$(date -u -d "@$scheduled_epoch - 1 day" +%s)
+          fi
+
+          target_epoch=$((scheduled_epoch + QUEUE_EARLY_MINUTES * 60))
+          now_epoch=$(date -u +%s)
+          if [ "$target_epoch" -le "$now_epoch" ]; then
+            echo "Target time already reached; continue."
+            exit 0
+          fi
+
+          sleep_seconds=$((target_epoch - now_epoch))
+          echo "Sleeping ${sleep_seconds}s until $(date -u -d "@$target_epoch" +"%Y-%m-%dT%H:%M:%SZ")"
+          sleep "$sleep_seconds"
 
       - name: Run Zotero → Feishu pipeline
         run: python main.py

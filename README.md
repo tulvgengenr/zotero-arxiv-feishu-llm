@@ -81,9 +81,11 @@ Optional: `OPENAI_API_KEY` / `OPENAI_MODEL` / `OPENAI_BASE_URL` (aliases of `LLM
 
 ## GitHub Actions
 - Workflow `.github/workflows/run.yml`:  
-  - `run` job: two cron triggers to cover DST without changes:  
-    - `0 0 * * 1-5` (UTC Mon–Fri 00:00) → Sun–Thu 20:00 EDT  
-    - `0 1 * * 1-5` (UTC Mon–Fri 01:00) → Sun–Thu 20:00 EST  
+  - `run` job: two cron triggers to cover DST. To avoid early runs due to GH queueing, the job can queue early and sleep until target time.
+  - Default config in the workflow:
+    - cron `30 23 * * 0-4` + `QUEUE_EARLY_MINUTES=60` → target UTC 00:30 (EDT)
+    - cron `30 0 * * 1-5` + `QUEUE_EARLY_MINUTES=60` → target UTC 01:30 (EST)
+  - If you change the early window, update both the cron entries and `QUEUE_EARLY_MINUTES` together.
     Both leave slack for GH scheduling; manual dispatch always available.  
   - `test` job: manual only, uses `FEISHU_TEST_WEBHOOK` for safe drills.
 - In your repo (or fork) Settings → Secrets, add the env vars above; the workflow copies `config.example.yaml` to `config.yaml` and runs `python main.py`.
