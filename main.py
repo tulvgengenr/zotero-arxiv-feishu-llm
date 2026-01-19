@@ -5,7 +5,7 @@ import yaml
 
 from arxiv_fetcher import fetch_daily_arxiv
 from feishu import build_post_content, post_to_feishu
-from wechat import build_wechat_markdown, post_to_wechat
+from wechat import post_papers_separately
 from llm_utils import LLMScorer
 from similarity import rerank_by_embedding
 from zotero_client import fetch_papers
@@ -167,14 +167,13 @@ def main():
 
     # 根据配置选择发送到飞书或企业微信
     if config.get("wechat", {}).get("webhook_url"):
-        # 发送到企业微信
-        payload = build_wechat_markdown(
+        # 发送到企业微信（每条论文一条消息）
+        post_papers_separately(
+            webhook_url=config["wechat"]["webhook_url"],
             title=config["wechat"].get("title", "每日论文推送"),
-            query=config["arxiv"]["query"],
             papers=matches,
+            delay_seconds=0.5,  # 每条消息间隔0.5秒，避免发送过快
         )
-        post_to_wechat(config["wechat"]["webhook_url"], payload)
-        print("Sent to WeChat Work webhook.")
     elif config.get("feishu", {}).get("webhook_url"):
         # 发送到飞书
         payload = build_post_content(
