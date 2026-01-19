@@ -53,6 +53,7 @@
 ## 企业微信配置
 - 在企业微信群聊中添加「自定义机器人」（群机器人），复制生成的 Webhook URL（参考 [官方文档](https://developer.work.weixin.qq.com/document/path/91770)）。
 - 消息以 Markdown 格式通过 Webhook 发送；在 `config.yaml` 中配置 `wechat.webhook_url` / `wechat.title`。
+- **消息长度**：由于企业微信单条消息限制为 4096 字符，程序会自动将内容按 1000 字符分割成多条消息发送。
 - **优先级**：如果同时配置了飞书和企业微信，程序会优先使用企业微信。
 
 ## 密钥与环境变量
@@ -103,7 +104,11 @@
 - **本地运行**：直接执行 `python main.py`（读取配置并立即推送）。
   - 程序会自动检测配置的 Webhook（飞书或企业微信）并相应发送。
   - 如果同时配置了飞书和企业微信，程序会优先使用企业微信。
+  - 对于企业微信，消息会自动按 1000 字符分割成多条消息，避免超过 4096 字符限制。
   - 这是推荐的本地运行和调试方式，可以快速验证配置和功能。
+- **测试企业微信 Webhook**：使用 `python test_wechat.py <webhook_url>` 测试企业微信 Webhook 是否正常工作。
+  - 测试脚本可以测试不同长度的消息，帮助诊断问题。
+  - 也可以设置环境变量：`export WECHAT_WEBHOOK=<url> && python test_wechat.py`
 - 如只想测试消息样式，可先设置 `FEISHU_TEST_WEBHOOK` 或 `WECHAT_TEST_WEBHOOK`；发送成功后再切换正式 Webhook。
 - 调优建议：库很大时可调低 `query.max_corpus` 或 `zotero.max_items` 以加速。
 
@@ -111,3 +116,4 @@
 - LLM 调用使用 `response_format={"type": "json_object"}`，需确保模型支持 JSON 输出。
 - 优先使用环境变量传密钥，便于 CI/容器。
 - 如果使用自建/本地 LLM，设置好 `llm.base_url`、`llm.model` 与任意伪 API Key 即可。
+- 企业微信单条消息限制为 4096 字符，程序会自动按 1000 字符分割成多条消息发送。

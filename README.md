@@ -53,6 +53,7 @@ Pull the latest arXiv papers, match them against your Zotero library via embeddi
 ## WeChat Work Setup
 - In your WeChat Work group chat, add a "Custom Bot" (群机器人) and copy the Webhook URL (see [official guide](https://developer.work.weixin.qq.com/document/path/91770)).
 - Messages are sent in Markdown format via Webhook; configure `wechat.webhook_url` / `wechat.title` in `config.yaml`.
+- **Message Length**: Due to WeChat Work's 4096 character limit, messages are automatically split into multiple messages of up to 1000 characters each.
 - **Priority**: If both Feishu and WeChat Work webhooks are configured, WeChat Work takes priority.
 
 ## Secrets & Env Vars
@@ -89,6 +90,9 @@ Priority: env vars > `config.yaml` > `config.example.yaml`.
 - **Local run**: `python main.py` (reads config and sends immediately).
   - The script will automatically detect which webhook is configured (Feishu or WeChat Work) and send accordingly.
   - If both are configured, WeChat Work takes priority.
+  - For WeChat Work, messages are automatically split into chunks of 1000 characters to avoid the 4096 character limit.
+- **Test WeChat Webhook**: Use `python test_wechat.py <webhook_url>` to test if your WeChat Work webhook is working correctly.
+  - The test script can also test different message lengths and help diagnose issues.
 - To test without affecting production, set `FEISHU_TEST_WEBHOOK` or `WECHAT_TEST_WEBHOOK`, then switch to the real Webhook.
 - For large Zotero libraries, lower `query.max_corpus` or `zotero.max_items` to speed up.
 
@@ -106,3 +110,4 @@ Priority: env vars > `config.yaml` > `config.example.yaml`.
 - LLM calls expect JSON output; pick a model that supports it.
 - Prefer env vars for secrets (CI/containers).
 - For self-hosted/local LLMs, set `llm.base_url`, `llm.model`, and any placeholder API key.
+- WeChat Work has a 4096 character limit per message; messages are automatically split into chunks of 1000 characters.
