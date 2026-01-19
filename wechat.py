@@ -245,7 +245,7 @@ def post_papers_separately(
     """
     import time
     
-    MAX_MESSAGE_LENGTH = 4000  # 每条消息最大长度（留96字符安全边界）
+    MAX_MESSAGE_LENGTH = 1000  # 每条消息最大长度（留3096字符安全边界，确保不超过4096）
     total = len(papers)
     date_str = datetime.now().strftime('%Y年%m月%d日')
     
@@ -259,7 +259,7 @@ def post_papers_separately(
     # 构建所有论文的内容
     paper_contents = []
     for idx, paper in enumerate(papers, 1):
-        paper_md = _paper_md(idx, paper, max_abstract_length=500)  # 允许更长的摘要
+        paper_md = _paper_md(idx, paper, max_abstract_length=400)  # 限制摘要长度
         paper_contents.append(paper_md)
     
     # 按长度分割消息
@@ -274,18 +274,23 @@ def post_papers_separately(
     current_message_parts = [header]
     
     for idx, paper_content in enumerate(paper_contents, 1):
-        paper_with_separator = paper_content + "\n\n---\n\n"
+        separator = "\n\n---\n\n"
+        paper_with_separator = paper_content + separator
         paper_length = len(paper_with_separator)
         
         # 检查添加这篇论文后是否会超过长度限制
         if current_length + paper_length > MAX_MESSAGE_LENGTH:
-            # 如果当前消息已经有内容，先保存当前消息
-            if len(current_message_parts) > 1 or (len(current_message_parts) == 1 and current_message_parts[0] != header):
+            # 如果当前消息已经有内容（除了header），先保存当前消息
+            if len(current_message_parts) > 1:
                 # 移除最后的分隔符
                 last_part = current_message_parts[-1]
-                if last_part.endswith("\n\n---\n\n"):
-                    current_message_parts[-1] = last_part[:-8]
-                messages.append("".join(current_message_parts))
+                if last_part.endswith(separator):
+                    current_message_parts[-1] = last_part[:-len(separator)]
+                final_message = "".join(current_message_parts)
+                # 再次检查长度
+                if len(final_message) > MAX_MESSAGE_LENGTH:
+                    final_message = final_message[:MAX_MESSAGE_LENGTH - 20] + "\n\n*（内容过长已截断）*"
+                messages.append(final_message)
             
             # 开始新消息（如果单篇论文就超过限制，需要截断）
             if paper_length > MAX_MESSAGE_LENGTH:
@@ -307,17 +312,29 @@ def post_papers_separately(
     if current_message_parts:
         # 移除最后的分隔符
         last_part = current_message_parts[-1]
-        if last_part.endswith("\n\n---\n\n"):
-            current_message_parts[-1] = last_part[:-8]
-        messages.append("".join(current_message_parts))
+        if last_part.endswith(separator):
+            current_message_parts[-1] = last_part[:-len(separator)]
+        final_message = "".join(current_message_parts)
+        # 再次检查长度
+        if len(final_message) > MAX_MESSAGE_LENGTH:
+            final_message = final_message[:MAX_MESSAGE_LENGTH - 20] + "\n\n*（内容过长已截断）*"
+        messages.append(final_message)
     
     # 发送所有消息
     total_messages = len(messages)
     for msg_idx, message_content in enumerate(messages, 1):
         try:
-            # 最终长度检查
-            if len(message_content) > 4096:
+            # 最终严格长度检查（确保不超过4096）
+            actual_length = len(message_content)
+            if actual_length > 4096:
+                print(f"警告: 消息 {msg_idx} 长度 {actual_length} 超过4096，正在截断...")
                 message_content = message_content[:4050] + "\n\n*（内容过长已截断）*"
+                actual_length = len(message_content)
+            
+            # 再次验证
+            if actual_length > 4096:
+                print(f"错误: 消息 {msg_idx} 截断后仍超过4096字符: {actual_length}")
+                message_content = message_content[:4090] + "..."
             
             payload = {
                 "msgtype": "markdown",
@@ -326,13 +343,14 @@ def post_papers_separately(
                 }
             }
             post_to_wechat(webhook_url, payload)
-            print(f"Sent message {msg_idx}/{total_messages} to WeChat Work webhook (length: {len(message_content)} chars)")
+            print(f"✅ Sent message {msg_idx}/{total_messages} to WeChat Work webhook (length: {len(message_content)} chars)")
             
             # 在消息之间添加延迟，避免发送过快
             if msg_idx < total_messages and delay_seconds > 0:
                 time.sleep(delay_seconds)
         except Exception as e:
-            print(f"Failed to send message {msg_idx}/{total_messages}: {e}")
+            print(f"❌ Failed to send message {msg_idx}/{total_messages}: {e}")
+            print(f"   消息长度: {len(message_content)} 字符")
             # 继续发送其他消息，不中断整个流程
             continue
     
